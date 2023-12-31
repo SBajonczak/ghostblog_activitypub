@@ -1,5 +1,5 @@
 const config = require('./consts')
-
+const ghostHandler = require('./ghostHandler');
 
 
 function GetProfilePayload(username) {
@@ -25,9 +25,9 @@ function GetProfilePayload(username) {
         ],
         type: 'Service',
         id: `https://${config.url.rootDomain}/activityPub/actors/${username}`,
-        name: 'sascha',
-        preferredUsername: 'sascha',
-        url: 'https://blog.bajonczak.com',
+        name: '',
+        preferredUsername: '',
+        url: '',
         summary: 'Blogger, Father, Beekeper, Iot passionist.',
         following: `https://${config.url.rootDomain}/activitypub/actors/${username}/following`,
         followers: `https://${config.url.rootDomain}/activitypub/actors/${username}/followers`,
@@ -54,21 +54,53 @@ function GetProfilePayload(username) {
             mediaType: "image/png",
             url: `${config.url.images.AvatarIcon}`
         },
-
         publicKey: {
             id: `https://${config.url.rootDomain}/activitypub/actors/${username}#main-key`,
             owner: `https://${config.url.rootDomain}/activitypub/${username}/sascha`,
-            publicKeyPem: "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3X8NZQk2NP/IVL+l62fTL/WMVuiNOoeoZSB8UTs6ESTBjqqqm7T8aVwv+oFQfdOBHrcROu4TyFGj5BGuNVv9P1af/bFwNqwkG0HPxFcFjYmaWyH6p7Z9uwMQa+HAADyVovUuETeeG5wqS3PeD5Fs0sAZg2kEIqBm5RJ/PfCxPsE7ng517QLIiIlT4BbWMWF/q0MhTHZvTtMMjgN5E05UINv0b3e24bX2+dvmEl5+SI+9DEDsCZqi76pODOBN/+ONQ03JcoowM8j2//3IzcnXqG3OcVx9FBOoMKYiuwns9jLWsnlWvdRUXSMZsF+cYgO0HF9bXwBrgvOMAltEPxwzlQIDAQAB-----END PUBLIC KEY-----"
+            publicKeyPem: `${config.url.publicKey}`
         }
     };
     return user;
 }
 
 exports.Profile = async function (req, res, next) {
-
-    const acceptType = req.get('Accept')    
+    const acceptType = req.get('Accept')
     const user = req.params.user;
-    console.log("Got user request: " + acceptType, req.params.user);
+    console.log(`Got user request: ${acceptType} ${req.params.user}! Try to resolve ghost author `);
+    // Fetch data from ghost blog
+    const setting = await ghostHandler.GetBlogSettings();
+    const authorsFromGhost = await ghostHandler.GetAuthorBySlug(req.params.user)
+
+    const userResponse = GetProfilePayload(user)
+    if (authorsFromGhost != null) {
+
+        const authorFromGhost = authorsFromGhost.authors[0];
+        console.log(authorFromGhost);
+        userResponse.name = authorFromGhost.name;
+        if (authorFromGhost.cover_image != null) {
+            userResponse.image.url = authorFromGhost.cover_image;
+        } else {
+            if (setting.settings.cover_image != null) {
+                userResponse.image.url = setting.settings.cover_image;
+            }
+            else {
+                userResponse.image = null;
+            }
+        }
+        if (authorFromGhost.profile_image != null) {
+            userResponse.icon.url = authorFromGhost.profile_image;
+        } else {
+            userResponse.icon = null;
+        }
+    } else {
+        // Resettgin profile image if not present.
+        userResponse.image = null;
+        userResponse.icon = null;
+
+    }
+
+    userResponse.url = setting.settings.url;
+
 
     if (acceptType && acceptType.includes('text/html') && !req.path.endsWith('.json')) {
         res.redirect(config.url.blogUrl)
@@ -76,5 +108,5 @@ exports.Profile = async function (req, res, next) {
     }
     console.log("Sending JSON profile reponse");
 
-    res.json(GetProfilePayload(user));
+    res.json(userResponse);
 }

@@ -17,6 +17,39 @@ exports.GetPostsFromGhost = async function () {
     }
 }
 
+
+
+
+// Get all posts from ghost blog
+exports.GetBlogSettings = async function (slug) {
+    try {
+        const response = await axios.get(`${config.url.blogUrl}/ghost/api/v3/content/settings`, {
+            params: {
+                key: process.env.GHOST_API_KEY 
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching authors:', error.message);
+    }
+}
+
+
+
+
+exports.GetAuthorBySlug = async function (slug) {
+    try {
+        const response = await axios.get(`${config.url.blogUrl}/ghost/api/v3/content/authors/slug/${slug}/`, {
+            params: {
+                key: process.env.GHOST_API_KEY 
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching author:', error.message);
+    }
+}
+
 // Get all posts from ghost blog
 exports.GetAuthors = async function () {
     try {

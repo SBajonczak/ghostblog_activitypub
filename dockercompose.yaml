@@ -13,3 +13,4 @@ services:
       - PROFILE_HOMEPAGE=https://blog.bajonczak.com
       - IMAGE_AVATAR_URL=https://blog.bajonczak.com/content/images/2022/10/20221014_171637.png
       - ICON_AVATAR_URL=https://blog.bajonczak.com/content/images/2022/10/20221014_171637.png
+      - PUB_KEY=-----BEGIN PUBLIC KEY-----ABC-----END PUBLIC KEY-----

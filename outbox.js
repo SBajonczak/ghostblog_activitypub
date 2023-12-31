@@ -52,8 +52,10 @@ async function GetOutboxFiles(userid) {
     const posts = await ghostHandler.GetPostsFromGhost();
     const result = [];
     posts.forEach(post => {
-        const data = ConvertToPubArticle(post, userid);
-        result.push(data);
+        if (post.primary_author.slug==userid){
+            const data = ConvertToPubArticle(post, userid);
+            result.push(data);
+        }
 
     });  // end foreach
     return result;
@@ -63,12 +65,8 @@ async function GetOutboxFiles(userid) {
 
 exports.OutboxRoute = async function (req, res, next) {
     console.log("Got outbox request:", req.params.userId)
-    if (req.params.length == 0) {
-        console.log("no Params");
-    }
-    else {
-        console.log(req.params[0]);
-    }
+
+
     var posts = await GetOutboxFiles(req.params.userId);
 
     const outboxData = {

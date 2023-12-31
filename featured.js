@@ -52,7 +52,7 @@ async function GetFeaturesPosts(userid) {
     const posts = await ghostHandler.GetPostsFromGhost();
     const result = [];
     posts.forEach(post => {
-        if (post.featured) {
+        if (post.featured && post.primary_author.slug == userid) {
             const data = ConvertToFeaturedArticle(post, userid);
             result.push(data);
         }
@@ -65,7 +65,7 @@ exports.GetFeaturedPosts = async function (req, res, next) {
     const user = req.params.user;
     console.log("Got featured request for " + user);
 
-    var posts = await GetFeaturesPosts();
+    var posts = await GetFeaturesPosts(user);
     console.log(posts.length);
     const outboxData = {
         '@context': [

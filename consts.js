@@ -11,6 +11,7 @@ const imagePaths=
   AvatarIcon:process.env.ICON_AVATAR_URL, 
 }
 exports.url = {
+    publicKey:process.env.PUB_KEY,
     images:imagePaths,
     path: urlPaths,
     rootDomain: urlPaths.domain,
