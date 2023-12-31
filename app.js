@@ -1,102 +1,68 @@
 const express = require('express');
+require('dotenv').config();
+
 const outbox = require('./outbox')
+const featrues = require('./featured')
 const bodyParser = require('body-parser');
 // Import express imddelware
-const { Actor, HttpService } = require('activitypub');
-const axios = require('axios');
-const ghostApiEndpoint = 'https://blog.bajonczak.com/ghost/api/v4/content/posts/';
 const app = express();
 const port = 3000;
+const config = require('./consts')
+const profile = require('./profile')
+const follower = require('./followers')
+const likehandler = require('./likes');
+const inboxHandler = require('./inbox');
+const featuredHandler = require('./featured');
 
 // Middleware for parsing JSON
 app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }))
+app.use(bodyParser.json({ type: 'application/activity+json' })) // support json encoded bodies
 
 
+app.use((req, res, next) => {
+    res.append('Access-Control-Allow-Origin', ['*'])
+    res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    res.append('Access-Control-Allow-Headers', 'Content-Type')
+    next()
+})
 
-app.post('/activitypub/inbox', async (req, res) => {
-    const { body } = req;
-  
-    try {
-      const result = await actor.receive(body);
-      res.status(200).json(result);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+
+// deny all post requrests
+app.post('*', (req, res) => {
+    res.status(404)
+    res.send('Resource not found')
+})
+
+
+app.use('/activitypub/img', express.static('img'))
+
 
 app.get('/', (req, res) => {
-    res.send('');
+    res.redirect(config.url.blogUrl);
 });
 
 
-
 // Benutzerobjekt erstellen
-const user = {
-    '@context': 'https://www.w3.org/ns/activitystreams',
-    type: 'Person',
-    id: 'https://example.com/activityPub/users/sascha',
-    name: 'Sascha',
-    preferredUsername: 'Sascha',
-    summary: 'Blogger, Fahter, Beekeper, Iot passionist',
-    inbox: 'https://bajonczak.com/activityPub/users/alice/inbox',
-    outbox: 'https://bajonczak.com/activityPub/users/alice/outbox',
-  };
-
+app.get('/activityPub/actors/:user', profile.Profile);
+// Get follower handlers
+app.get('/activitypub/actors/:user/following', follower.following);
+app.get('/activitypub/actors/:user/followers', follower.followers);
 // Route für Benutzerprofil
-app.get('/activityPub/users/:user', (req, res) => {
-    const userId = req.params.user;
-    if (userId.toLowerCase() !== 'sascha') {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    res.json(user);
-  });
-
-  function myJson(data) {
-    return JSON.stringify(data, null, 2);
-  }
-  
+app.get('/activitypub/actors/:user/liked', likehandler.Liked);
 
 
-  
-
-// Get inbox and outbox
-
-  app.get('/activityPub/users/:user/inbox', (req, res) => {
-    const inboxData = {
-      '@context': 'https://www.w3.org/ns/activitystreams',
-      summary: 'Inbox for Sascha',
-      type: 'OrderedCollection',
-      totalItems: 0,
-      orderedItems: [],
-    };
-    res.setHeader('Content-Type', 'application/jrd+json');
-  
-    res.send(myJson(inboxData));
-  });
-  
-  // Route für Outbox
-  app.get('/activityPub/users/:user/outbox', async (req, res) => {
-    var posts= await outbox.GetOutboxFiles();
-    console.log(posts);
-    const outboxData = {
-      '@context': 'https://www.w3.org/ns/activitystreams',
-      summary: 'Outbox for Sascha',
-      type: 'OrderedCollection',
-      totalItems: 0,
-      orderedItems: posts,
-    };
-    res.setHeader('Content-Type', 'application/jrd+json');
-  
-    res.send(myJson(outboxData));
-  });
+app.get('/activityPub/actors/:user/inbox', inboxHandler.Inbox);
 
 
-  // WebFinger endpoint
+// Route für featrued
+app.get('/activityPub/actors/:user/featured', featuredHandler.GetFeaturedPosts);
+app.get('/activityPub/actors/:userId/outbox', outbox.OutboxRoute);
+
+// WebFinger endpoint
 app.get('/.well-known/webfinger', (req, res) => {
     const resource = req.query.resource;
-
+    console.log("Got Finger Request with resource:", req.query.resource)
     if (!resource) {
         return res.status(400).json({ error: 'Resource parameter is required.' });
     }
@@ -106,6 +72,8 @@ app.get('/.well-known/webfinger', (req, res) => {
     const webFingerResponse = {
         subject: resource,
         aliases: [
+            `${resource}`,
+            `https://${config.url.rootDomain}/activityPub/actors/sascha`,
             'https://hachyderm.io/@Sascha',
             'https://hachyderm.io/users/Sascha'
         ],
@@ -113,31 +81,21 @@ app.get('/.well-known/webfinger', (req, res) => {
             {
                 rel: 'http://webfinger.net/rel/profile-page',
                 type: 'text/html',
-                href: 'https://hachyderm.io/@Sascha'
+                href: `${process.env.PROFILE_HOMEPAGE}`
             },
             {
                 rel: 'self',
                 type: 'application/activity+json',
-                href: 'https://bajonczak.com/activityPub/users/Sascha'
+                href: `https://${config.url.rootDomain}/activityPub/actors/sascha`
             },
             {
                 rel: 'http://ostatus.org/schema/1.0/subscribe',
                 template: 'https://hachyderm.io/authorize_interaction?uri={uri}'
             },
             {
-                rel: 'http://schemas.google.com/g/2010#updates-from',
-                href: 'https://mastodon.social/@sashca',
-                type: 'application/activity+json',
-            },
-            {
                 rel: 'avatar',
-                href: `https://blog.bajonczak.com/content/images/2022/10/20221014_171637.png`,  
+                href: `${config.url.images.AvatarImage}`,
                 type: 'image/png',
-              },
-            {
-                rel: 'alternate',
-                type: 'application/rss+xml',
-                href: 'https://blog.bajonczak.com/rss/',
             }],
     };
 
@@ -146,5 +104,5 @@ app.get('/.well-known/webfinger', (req, res) => {
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+    console.log(`Server is running at http://localhost:${port} for configured domain ${config.url.blogDomain}`);
 });

@@ -1,7 +1,7 @@
 const ghostHandler = require('./ghostHandler');
-const config = require('./consts')
+const config = require('./consts');
 
-function ConvertToPubArticle(post, userid) {
+function ConvertToFeaturedArticle(post, userid) {
     const data =
     {
         '@context': [
@@ -48,37 +48,38 @@ function ConvertToPubArticle(post, userid) {
     return data;
 }
 
-async function GetOutboxFiles(userid) {
+async function GetFeaturesPosts(userid) {
     const posts = await ghostHandler.GetPostsFromGhost();
     const result = [];
     posts.forEach(post => {
-        const data = ConvertToPubArticle(post, userid);
-        result.push(data);
-
+        if (post.featured) {
+            const data = ConvertToFeaturedArticle(post, userid);
+            result.push(data);
+        }
     });  // end foreach
     return result;
 }
 
 
+exports.GetFeaturedPosts = async function (req, res, next) {
+    const user = req.params.user;
+    console.log("Got featured request for " + user);
 
-exports.OutboxRoute = async function (req, res, next) {
-    console.log("Got outbox request:", req.params.userId)
-    if (req.params.length == 0) {
-        console.log("no Params");
-    }
-    else {
-        console.log(req.params[0]);
-    }
-    var posts = await GetOutboxFiles(req.params.userId);
-
+    var posts = await GetFeaturesPosts();
+    console.log(posts.length);
     const outboxData = {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        summary: 'Outbox for ' + req.params.userId,
+        '@context': [
+            "https://www.w3.org/ns/activitystreams",
+            {
+                Hashtag: "as:Hashtag",
+                toot: "http://joinmastodon.org/ns#"
+            }
+        ],
+        summary: 'Outbox for ' + user,
         type: 'OrderedCollection',
+        id: `https://${config.url.rootDomain}/activitypub/actors/${user}/featured`,
         totalItems: posts.length,
         orderedItems: posts,
     };
-    res.setHeader('Content-Type', 'application/jrd+json');
-
     res.json(outboxData);
 }

@@ -1,17 +1,15 @@
 version: '3'
-
 services:
   app:
-    image: docker.io/beejay/webfinger:latest
+    image: docker.io/beejay/webfinger:1.28
     ports:
-      - "3000:80"  # HTTP-Port
-      - "3000:443"  # HTTP-Port
-
-  nginx-proxy:
-    image: jwilder/nginx-proxy
-    container_name: nginx-proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - 80:3000
+      - 443:3000
+    environment:
+      - ROOT_PATH=/
+      - ROOT_DOMAIN=bajonczak.com
+      - GHOST_API_KEY=b9c346fb03c5fa53bbbb79bc6a
+      - GHOST_BLOG_DOMAIN=blog.bajonczak.com
+      - PROFILE_HOMEPAGE=https://blog.bajonczak.com
+      - IMAGE_AVATAR_URL=https://blog.bajonczak.com/content/images/2022/10/20221014_171637.png
+      - ICON_AVATAR_URL=https://blog.bajonczak.com/content/images/2022/10/20221014_171637.png

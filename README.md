@@ -1,12 +1,14 @@
 # About
-This Project will host an activitypub for the Ghost blogging engine. 
-So this will help do publish the Blog articles through Mastodon or elsewhere in the fediverse.
-
-In general it uses the webfinger spec from w3wc to publish the metadata from your profile and your blog. 
-
+this project will host an Activity Pub Feed for your Ghost blog instance. 
+So in general it can be host beside the Ghost blog. 
 
 # Requirements
-You need a custom domain to run this application
+You must create an Api-Key within the Ghost Blog and add this into config variables.
+For local deployment you can set into the .env file.
+
+For running it in your production environment, you must set ths variables into the enironment variables. 
+
+
 
 
 # Run locally 
@@ -20,3 +22,10 @@ Simply build the container with
 ```
 docker build -t webfinger .
 ```
+
+
+# Publish Container
+
+``
+docker tag webfinger webfinger:1.3
+``
