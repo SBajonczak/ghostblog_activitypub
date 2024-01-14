@@ -63,7 +63,7 @@ function GetProfilePayload(username) {
     return user;
 }
 
-exports.Profile = async function (req, res, next) {
+exports.ProfileHandler = async function (req, res, next) {
     const acceptType = req.get('Accept')
     const user = req.params.user;
     console.log(`Got user request: ${acceptType} ${req.params.user}! Try to resolve ghost author `);
@@ -93,7 +93,7 @@ exports.Profile = async function (req, res, next) {
             userResponse.icon = null;
         }
     } else {
-        // Resettgin profile image if not present.
+        // Getting profile image if not present.
         userResponse.image = null;
         userResponse.icon = null;
 

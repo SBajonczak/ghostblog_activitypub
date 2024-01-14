@@ -5,6 +5,7 @@ const port = 3000;
 
 require('dotenv').config();
 
+const fs = require('fs');
 const wellknownHandler = require('./wellknown');
 const outbox = require('./outbox')
 const featrues = require('./featured')
@@ -15,7 +16,7 @@ const follower = require('./followers')
 const likehandler = require('./likes');
 const inboxHandler = require('./inbox');
 const featuredHandler = require('./featured');
-
+const googlehandler = require('./googlehandler');
 // Middleware for parsing JSON
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }))
@@ -40,13 +41,17 @@ app.post('*', (req, res) => {
 app.use('/activitypub/img', express.static('img'))
 
 
+const addtxtFilepath = __dirname + '/add.txt';
+app.use(express.static(__dirname));
+
+
 app.get('/', (req, res) => {
     res.redirect(config.url.blogUrl);
 });
 
 
 // Benutzerobjekt erstellen
-app.get('/activityPub/actors/:user', profile.Profile);
+app.get('/activityPub/actors/:user', profile.ProfileHandler);
 // Get follower handlers
 app.get('/activitypub/actors/:user/following', follower.following);
 app.get('/activitypub/actors/:user/followers', follower.followers);
@@ -59,9 +64,10 @@ app.get('/activityPub/actors/:user/inbox', inboxHandler.InboxHandler);
 
 // Route für featrued
 app.get('/activityPub/actors/:user/featured', featuredHandler.GetFeaturedPosts);
-app.get('/activityPub/actors/:userId/outbox', outbox.OutboxRoute);
+app.get('/activityPub/actors/:user/outbox', outbox.OutboxHandler);
 // WebFinger endpoint
 app.get('/.well-known/webfinger', wellknownHandler.WellknownHandler);
+// app.get('/add.txt', googlehandler.HandleAddTxt);
 
 // Start the server
 app.listen(port, () => {

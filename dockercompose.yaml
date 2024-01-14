@@ -1,7 +1,7 @@
 version: '3'
 services:
   app:
-    image: docker.io/beejay/webfinger:1.28
+    image: docker.io/beejay/webfinger:latest
     ports:
       - 80:3000
       - 443:3000
